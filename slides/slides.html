@@ -1,0 +1,272 @@
+<div class="slide-layout-title">
+	<h1>FreeNAS 10 GUI</h1>
+	<h2>Introduction to the new architecture patterns</h2>
+</div>
+<hr>
+<div>
+	<h1>Some metrics</h1>
+	<p>
+        <pre>
+---------------------------------------
+Language   files  blank  comment   code
+---------------------------------------
+Javascript   796   4518     3543  49802
+HTML         368    215       38  21157
+CSS          447   1322      409   5322
+make           2     12       26     42
+---------------------------------------
+SUM:        1613   6067     4016  76323
+---------------------------------------
+        </pre>
+    </p>
+</div>
+<hr>
+<div>
+	<h1>Some metrics</h1>
+    <ul>
+        <li>11 sections</li>
+        <li>68 inspectors</li>
+        <li>34 user interface descriptors</li>
+    </ul>
+</div>
+<hr>
+<div>
+    <h2>First was the wild west</h2>
+    <div class="img-container">
+        <img src="images/component-to-model.png" style="height: calc(100% - 3em);">
+    </div>
+</div>
+<hr>
+<div>
+    <h2>Then was the service</h2>
+    <div class="img-container">
+        <img src="images/inspector-service-model.png" style="height: calc(100% - 3em);">
+    </div>
+</div>
+<hr>
+<div>
+    <h2>Reality check...</h2>
+    <div class="img-container">
+        <img src="images/reality_check.png" style="width: 100%">
+    </div>
+</div>
+<hr>
+<div>
+    <h2>Reality check...</h2>
+    <div class="img-container">
+        <img src="images/reality_check.png" style="width: 200%">
+    </div>
+</div>
+<hr>
+<div>
+    <h2>Reality check...</h2>
+    <div class="img-container">
+        <img src="images/reality_check.png" style="margin-left: -100%; width: 200%">
+    </div>
+</div>
+<hr>
+<div>
+    <h2>Let's take a guinea pig...</h2>
+    <div class="img-container">
+        <img src="images/network_old.png" style="width: 90%; max-height: calc(100% - 3em); max-width: 100%;">
+    </div>
+</div>
+<hr>
+<div>
+    <h2>...and make some changes</h2>
+    <div class="img-container">
+        <img src="images/network-ng.png" style="max-height: calc(100% - 3em); max-width: 100%;">
+    </div>
+</div>
+<hr>
+<div>
+    <h2>Let's do something more complicated</h2>
+    <div class="img-container">
+        <img src="images/vms-ng.png" style="max-height: calc(100% - 3em); max-width: 100%;">
+    </div>
+</div>
+<hr>
+<div>
+    <h2>One cascading-list to rule them all</h2>
+    <p>Part of ui/main.reel/main.html</p>
+    <p>Only the root changes</p>
+    <p>Only one type of top level element...</p>
+</div>
+<hr>
+<div>
+    <h2>Some new beasts 1/7</h2>
+    <h3>Section</h3>
+    <ul style="font-size: x-large;">
+        <li>Type: Data object</li>
+        <li>Inspector: ui/controls/section.reel/section-root.reel</li>
+        <li>Prototype:
+            <pre style="font-size: medium; line-height: 1.25em">
+{
+    id: String
+    label: String
+    icon: String
+    order: Integer
+    entries: [DataObjects]
+    overview: Object
+    settings: SectionSettings
+}
+            </pre>
+        </li>
+    </ul>
+    <p>Initialized and loaded by...</p>
+</div>
+<hr>
+<div>
+    <h2>Some new beasts 2/7</h2>
+    <h3>*SectionService</h3>
+    <ul style="font-size: x-large;">
+        <li>Type: Service</li>
+        <li>Location: core/service/section</li>
+        <li>Parent: AbstractSectionService (core/service/section/abstract-section-service.js)</li>
+        <li>Granularity: One per section</li>
+        <li>Prototype
+            <pre style="font-size: medium; line-height: 1.25em">
+{
+    init: function()
+    loadEntries: function() => Promise
+    loadOverview: function() => Promise
+    loadSettings: function() => Promise
+    section: Section
+}
+            </pre>
+        </li>
+        <li>Automatically instanciated, initialized and loaded on first section enter</li>
+        <li>Always accessible at <pre style="display: inline; line-height: 1em; padding: 0;">application.sectionService</pre> and at <pre style="display: inline; line-height: 1em; padding: 0;">this._sectionService</pre> in children of AbstractInspector</li>
+        <li>Holds the whole business logic related to a section</li>
+    </ul>
+    <p>Gets data from...</p>
+</div>
+<hr>
+<div>
+    <h2>Some new beasts 3/7</h2>
+    <h3>*Repository</h3>
+    <ul style="font-size: x-large;">
+        <li>Type: Repository</li>
+        <li>Location: core/repository</li>
+        <li>Parent: AbstractRepository (core/repository/abstract-repository.js)</li>
+        <li>Granularity: One per data notion</li>
+        <li>Prototype
+            <pre style="font-size: medium; line-height: 1.25em">
+{
+    init: function()
+}
+            </pre>
+        </li>
+        <li>In charge of all high-level operations related to dataObjects (aggregation, composition, caching,...)</li>
+    </ul>
+    <p>Gets data from...</p>
+</div>
+<hr>
+<div>
+    <h2>Some new beasts 4/7</h2>
+    <h3>*Dao</h3>
+    <ul style="font-size: x-large;">
+        <li>Type: Data Access Object</li>
+        <li>Location: core/dao</li>
+        <li>Parent: AbstractDao (core/dao/abstract-dao.js)</li>
+        <li>Granularity: One per DataObject Type</li>
+        <li>Prototype
+            <pre style="font-size: medium; line-height: 1.25em">
+{
+    init: function() (MUST set this._model to the target Model)
+    list: function() => Promise
+    get: function() => Promise
+    getEmptyList: function() => Promise
+    getNewInstance: function() => Promise
+    save: function(object) => Promise
+    revert: function(object) => Promise
+}
+            </pre>
+        </li>
+        <li>Only tier allowed to call montage-data methods</li>
+        <li>If needed, it abstracts special cases that doesn't fit montage-data (by overriding methods)</li>
+    </ul>
+</div>
+<hr>
+<div>
+    <h2>Some new beasts 5/7</h2>
+    <h3>section-root.reel</h3>
+    <ul style="font-size: x-large;">
+        <li>Type: Inspector</li>
+        <li>Location: ui/controls/section.reel/section-root.reel</li>
+        <li>Parent: AbstractInspector</li>
+        <li>Properties
+            <pre style="font-size: medium; line-height: 1.25em">
+{
+    object: Section
+}
+            </pre>
+        </li>
+        <li>Structure:
+            <ul>
+                <li>overview (ui/controls/placeholder.reel)
+                    <pre style="font-size: medium; line-height: 1.25em;">
+    moduleId:   'ui/sections/' + section.id + '/inspectors/overview.reel'
+    object:     section.overview
+                    </pre>
+                </li>
+                <li>entries (ui/controls/viewer.reel)
+                    <pre style="font-size: medium; line-height: 1.25em;">
+    object:     section.entries
+                    </pre>
+                </li>
+                <li>settings (ui/controls/inspector-option.reel)
+                    <pre style="font-size: medium; line-height: 1.25em;">
+    object:     section.settings
+                    </pre>
+                </li>
+            </ul>
+        </li>
+    </ul>
+</div>
+<hr>
+<div>
+    <h2>Some new beasts 6/7</h2>
+    <h3>SectionSettings</h3>
+    <ul style="font-size: x-large;">
+        <li>Type: Data object</li>
+        <li>Inspector: ui/controls/section.reel/section-settings.reel</li>
+        <li>Prototype:
+            <pre style="font-size: medium; line-height: 1.25em">
+{
+    section: Section
+    settings: Object
+}
+            </pre>
+        </li>
+    </ul>
+</div>
+<hr>
+<div>
+    <h2>Some new beasts 7/7</h2>
+    <h3>section-settings.reel</h3>
+    <ul style="font-size: x-large;">
+        <li>Type: Inspector</li>
+        <li>Location: ui/controls/section.reel/section-settings.reel</li>
+        <li>Parent: AbstractInspector</li>
+        <li>Properties
+            <pre style="font-size: medium; line-height: 1.25em">
+{
+    object: SectionSettings
+}
+            </pre>
+        </li>
+        <li>Structure:
+            <ul>
+                <li>settings (ui/controls/placeholder.reel)
+                    <pre style="font-size: medium; line-height: 1.25em;">
+    moduleId:   'ui/sections/' + section.id + '/inspectors/settings.reel'
+    context:    context
+    object:     settings
+                    </pre>
+                </li>
+            </ul>
+        </li>
+    </ul>
+</div>
+
